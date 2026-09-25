@@ -1,0 +1,24 @@
+# Values for the end-to-end test (.github/workflows/e2e.yml): the whole stack
+# in-cluster using the bundled PostgreSQL and Valkey. Throwaway credentials,
+# never deployed anywhere real.
+config:
+  apiUri: "http://terminus.example.com"
+
+image:
+  pullPolicy: IfNotPresent
+
+secrets:
+  appSecret: "e2e0000000000000000000000000000000000000000000000000000000000000000"
+
+# The migration Job is a pre-install hook and would run before the bundled
+# database exists; migrations run at pod startup via config.appSetup instead.
+migrate:
+  enabled: false
+
+database:
+  enabled: true
+  auth:
+    password: "e2e-password"
+
+keyvalue:
+  enabled: true

@@ -1,0 +1,19 @@
+# Values for the external-services end-to-end scenario: connection URLs point at
+# the stand-in services in external-services.yaml and the migration Job runs as
+# a pre-install hook. Throwaway credentials; never deployed anywhere real.
+config:
+  apiUri: "http://terminus.example.com"
+  # The migration Job is the only thing migrating here. With appSetup left on,
+  # the web pod would migrate at startup too and the Job could fail unnoticed.
+  appSetup: "false"
+
+image:
+  pullPolicy: IfNotPresent
+
+secrets:
+  databaseUrl: "postgres://terminus:e2e-password@postgres:5432/terminus"
+  keyvalueUrl: "redis://valkey:6379/0"
+  appSecret: "e2e0000000000000000000000000000000000000000000000000000000000000000"
+
+migrate:
+  enabled: true

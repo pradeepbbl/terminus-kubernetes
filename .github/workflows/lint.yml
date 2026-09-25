@@ -1,0 +1,63 @@
+name: Lint
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_call:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Helm Setup
+        uses: azure/setup-helm@v5.0.0
+
+      - name: Python Setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: ">=3.13"
+
+      - name: Install chart-testing
+        env:
+          CT_VERSION: "3.11.0"
+        run: |
+          pip install yamllint yamale --quiet
+          curl -sSLo ct.tar.gz "https://github.com/helm/chart-testing/releases/download/v${CT_VERSION}/chart-testing_${CT_VERSION}_linux_amd64.tar.gz"
+          tar -xzf ct.tar.gz ct
+          sudo mv ct /usr/local/bin/ct
+          rm ct.tar.gz
+
+      - name: Lint changed charts
+        if: github.event_name == 'pull_request'
+        run: ct lint --config ct.yaml
+
+      - name: Lint all charts
+        if: github.event_name != 'pull_request'
+        run: ct lint --config ct.yaml --all --check-version-increment=false
+
+      - name: Render templates
+        run: |
+          helm template terminus charts/terminus \
+            --set secrets.databaseUrl="postgres://user:pass@db:5432/terminus" \
+            --set secrets.keyvalueUrl="redis://:pass@redis:6379/0" \
+            --set secrets.appSecret="ci0000000000000000000000000000000000000000000000000000000000000000" \
+            --set config.apiUri="https://terminus.example.com"
+
+      - name: Render bundled database and key-value
+        run: |
+          helm template terminus charts/terminus \
+            --set config.apiUri="https://terminus.example.com" \
+            --set secrets.appSecret="ci0000000000000000000000000000000000000000000000000000000000000000" \
+            --set migrate.enabled=false \
+            --set database.enabled=true \
+            --set database.auth.password="ci-password" \
+            --set keyvalue.enabled=true

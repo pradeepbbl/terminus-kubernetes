@@ -1,0 +1,26 @@
+# Values for `make run`: the whole stack on a local k3d cluster, using the
+# bundled PostgreSQL and Valkey and Traefik (shipped with k3s) as the Ingress
+# controller. Throwaway credentials for local use only; do not reuse elsewhere.
+# The hostname and port are set by the Makefile (config.apiUri, ingress.host).
+image:
+  pullPolicy: IfNotPresent
+
+secrets:
+  appSecret: "local000000000000000000000000000000000000000000000000000000000000000"
+
+# The migration Job is a pre-install hook and would run before the bundled
+# database exists; migrations run at pod startup via config.appSetup instead.
+migrate:
+  enabled: false
+
+database:
+  enabled: true
+  auth:
+    password: "local-password"
+
+keyvalue:
+  enabled: true
+
+ingress:
+  enabled: true
+  className: traefik

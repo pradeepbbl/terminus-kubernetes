@@ -1,0 +1,98 @@
+name: E2E
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "charts/**"
+      - "test/**"
+      - ".github/workflows/e2e.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "charts/**"
+      - "test/**"
+      - ".github/workflows/e2e.yml"
+  workflow_call:
+
+jobs:
+  bundled:
+    name: Bundled (${{ matrix.k8s }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s: ["v1.31.12", "v1.34.0"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Helm Setup
+        uses: azure/setup-helm@v5.0.0
+
+      - name: Cluster Setup
+        uses: helm/kind-action@v1
+        with:
+          node_image: kindest/node:${{ matrix.k8s }}
+
+      - name: Install
+        run: |
+          helm install terminus charts/terminus \
+            --namespace terminus --create-namespace \
+            --values test/e2e/bundled-values.yaml \
+            --wait --timeout 8m
+
+      - name: Test
+        run: helm test terminus --namespace terminus --logs --timeout 2m
+
+      - name: Debug
+        if: failure()
+        run: |
+          kubectl --namespace terminus get all,pvc
+          kubectl --namespace terminus describe pods
+          kubectl --namespace terminus logs --all-containers --tail=200 \
+            --selector app.kubernetes.io/instance=terminus --prefix
+
+  external:
+    name: External services and migrate hook
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Helm Setup
+        uses: azure/setup-helm@v5.0.0
+
+      - name: Cluster Setup
+        uses: helm/kind-action@v1
+
+      # The migration Job is a pre-install hook, so the datastores must be up
+      # before the chart is installed.
+      - name: Services
+        run: |
+          kubectl create namespace terminus
+          kubectl --namespace terminus apply -f test/e2e/external-services.yaml
+          kubectl --namespace terminus rollout status deployment/postgres deployment/valkey --timeout=3m
+
+      - name: Install
+        run: |
+          helm install terminus charts/terminus \
+            --namespace terminus \
+            --values test/e2e/external-values.yaml \
+            --wait --timeout 8m
+
+      - name: Test
+        run: helm test terminus --namespace terminus --logs --timeout 2m
+
+      - name: Debug
+        if: failure()
+        run: |
+          kubectl --namespace terminus get all,pvc
+          kubectl --namespace terminus describe pods
+          kubectl --namespace terminus logs --all-containers --tail=200 --prefix \
+            --selector app.kubernetes.io/instance=terminus

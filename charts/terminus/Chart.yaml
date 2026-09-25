@@ -1,0 +1,13 @@
+apiVersion: v2
+name: terminus
+description: A Helm chart for Terminus - a self-hosted TRMNL server
+type: application
+version: 0.1.0
+appVersion: "latest"
+home: https://github.com/pradeepbbl/terminus-kubernetes
+sources:
+  - https://github.com/usetrmnl/terminus
+  - https://github.com/pradeepbbl/terminus-kubernetes
+maintainers:
+  - name: pradeepbbl
+    url: https://github.com/pradeepbbl
