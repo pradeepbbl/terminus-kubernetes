@@ -59,9 +59,10 @@ config:
   apiUri: ""
   tz: "UTC"
   rackAttackAllowedSubnets: ""
-  # Set to "true" to run db migrate + asset compile on every pod startup.
-  # Equivalent to compose.yml APP_SETUP behaviour. Set to "false" and rely
-  # on the pre-upgrade migration job when running multiple replicas.
+  # Runs asset compile + db migrate on every pod startup (compose.yml APP_SETUP).
+  # Keep this "true": the image ships no compiled assets, so with "false" the
+  # app answers 500 on /login, which /up redirects to, and the readiness and
+  # liveness probes never pass. The migration Job does not replace it.
   appSetup: "true"
 
 # Optional Vault Agent Injector integration.

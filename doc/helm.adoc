@@ -293,7 +293,7 @@ The most commonly overridden values (see `charts/terminus/values.yaml` for the f
 |`enabled: false`
 
 |`config.*`
-|Non-sensitive env vars written to the ConfigMap (`apiUri`, `tz`, `rackAttackAllowedSubnets`, `appSetup`, `hanamiPort`). `apiUri` is required.
+|Non-sensitive env vars written to the ConfigMap (`apiUri`, `tz`, `rackAttackAllowedSubnets`, `appSetup`, `hanamiPort`). `apiUri` is required. Keep `appSetup` at `"true"`: it also compiles the assets, which the image does not ship, so with `"false"` the app answers 500 on `/login` and the probes never pass.
 |see `values.yaml`
 
 |`secrets.*`

@@ -30,6 +30,6 @@ spec:
       args:
         - "-q"
         - "-O"
-        - "-"
+        - "/dev/null"
         - "--timeout=10"
         - "http://{{ include "terminus.fullname" . }}:{{ .Values.service.port }}/up"

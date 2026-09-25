@@ -3,9 +3,6 @@
 # a pre-install hook. Throwaway credentials; never deployed anywhere real.
 config:
   apiUri: "http://terminus.example.com"
-  # The migration Job is the only thing migrating here. With appSetup left on,
-  # the web pod would migrate at startup too and the Job could fail unnoticed.
-  appSetup: "false"
 
 image:
   pullPolicy: IfNotPresent
