@@ -11,6 +11,8 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    env:
+      CT_FLAGS: --chart-yaml-schema /etc/ct/chart_schema.yaml --lint-conf /etc/ct/lintconf.yaml
 
     steps:
       - name: Checkout
@@ -32,17 +34,20 @@ jobs:
         run: |
           pip install yamllint yamale --quiet
           curl -sSLo ct.tar.gz "https://github.com/helm/chart-testing/releases/download/v${CT_VERSION}/chart-testing_${CT_VERSION}_linux_amd64.tar.gz"
-          tar -xzf ct.tar.gz ct
+          # ct lint needs the schema and lint config shipped alongside the binary.
+          tar -xzf ct.tar.gz ct etc
           sudo mv ct /usr/local/bin/ct
-          rm ct.tar.gz
+          sudo mkdir -p /etc/ct
+          sudo mv etc/chart_schema.yaml etc/lintconf.yaml /etc/ct/
+          rm -r ct.tar.gz etc
 
       - name: Lint changed charts
         if: github.event_name == 'pull_request'
-        run: ct lint --config ct.yaml
+        run: ct lint --config ct.yaml $CT_FLAGS
 
       - name: Lint all charts
         if: github.event_name != 'pull_request'
-        run: ct lint --config ct.yaml --all --check-version-increment=false
+        run: ct lint --config ct.yaml $CT_FLAGS --all --check-version-increment=false
 
       - name: Render templates
         run: |
