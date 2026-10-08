@@ -7,20 +7,50 @@ on:
       - "charts/**"
       - "test/**"
       - ".github/workflows/e2e.yml"
+  # No path filter here: the "E2E Gate" job below is a required check, so the
+  # workflow must report on every PR. The `changes` job does the filtering.
   pull_request:
     branches: [master]
-    paths:
-      - "charts/**"
-      - "test/**"
-      - ".github/workflows/e2e.yml"
   workflow_call:
 
 permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect chart changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.filter.outputs.run }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      # Outside pull requests (push, release) always run the full suite.
+      - name: Filter paths
+        id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BASE_SHA...$HEAD_SHA" |
+            grep -qE '^(charts/|test/|\.github/workflows/e2e\.yml$)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   bundled:
     name: Bundled (${{ matrix.k8s }})
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -61,6 +91,8 @@ jobs:
 
   external:
     name: External services and migrate hook
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -99,3 +131,22 @@ jobs:
           kubectl --namespace terminus describe pods
           kubectl --namespace terminus logs --all-containers --tail=200 --prefix \
             --selector app.kubernetes.io/instance=terminus
+
+  # The single required check. Skipped E2E jobs (docs-only PRs) count as
+  # success; a failed or cancelled one fails the gate.
+  gate:
+    name: E2E Gate
+    needs: [changes, bundled, external]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "* | *" cancelled "*) exit 1 ;;
+          esac
