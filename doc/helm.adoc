@@ -105,7 +105,7 @@ Tagged releases are packaged and pushed to GitHub Container Registry by `.github
 [source,bash]
 ----
 helm install terminus oci://ghcr.io/pradeepbbl/charts/terminus \
-  --version 0.1.0 \
+  --version 1.0.0 \
   --namespace terminus --create-namespace \
   --set config.apiUri="https://terminus.example.com" \
   --set secrets.databaseUrl="postgres://user:password@postgres-host:5432/terminus" \
