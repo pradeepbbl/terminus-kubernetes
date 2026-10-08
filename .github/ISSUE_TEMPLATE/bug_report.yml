@@ -1,0 +1,53 @@
+name: Bug report
+description: Something in the chart does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. For vulnerabilities, do not use this form; see the security policy.
+        Bugs in the Terminus application itself belong in the Terminus project.
+  - type: input
+    id: chart-version
+    attributes:
+      label: Chart version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: values
+    attributes:
+      label: Values used
+      description: Relevant overrides only. Remove all passwords, URLs with credentials and secrets.
+      render: yaml
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. helm install ...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Kubernetes distribution and version
+      placeholder: "k3s 1.34, EKS 1.31, kind 0.24 ..."
+  - type: input
+    id: helm-version
+    attributes:
+      label: Helm version
+      placeholder: "v3.16.0"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      description: Error messages, `kubectl describe` or pod logs. Redact secrets.
+      render: shell
